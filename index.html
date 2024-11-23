@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proyección Financiera Ajustada</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+    </style>
+</head>
+<body>
+    <h1>Proyección Financiera Ajustada</h1>
+    <div>
+        <label for="publicidad">Publicidad Mensual (USD):</label>
+        <input type="number" id="publicidad" value="4000">
+
+        <label for="gastoColombia">Gasto Operativo Colombia (USD):</label>
+        <input type="number" id="gastoColombia" value="6000">
+
+        <label for="gastoEcuador">Gasto Operativo Ecuador (USD):</label>
+        <input type="number" id="gastoEcuador" value="6200">
+
+        <button onclick="calcularProyeccion()">Calcular Proyección</button>
+    </div>
+    <table id="tablaProyeccion">
+        <thead>
+            <tr>
+                <th>Mes</th>
+                <th>Inremento de clientes </th>
+                <th>Total Clientes Registrados</th>
+                <th>Costo por Usuario registrado (USD)</th>
+                <th>Clientes Solicitando primer servicio 30%</th>
+                <th>Clientes Retenidos Nuevos 17%</th>
+                <th>Clientes Retenidos Activos</th>
+                <th>Usuarios Prime</th>
+                <th>Ganancia Prime (USD)</th>
+                <th>Usuarios Free</th>
+                <th>Ganancia Usuarios Free (USD)</th>
+                <th>Ganancia Primer Servicio (USD)</th>
+                <th>Ganancia Total (USD)</th>
+                <th>Gasto Operativo Total (USD)</th>
+                <th>Capital Externo Mensual (USD)</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+    <h2>Resumen Final:</h2>
+    <p id="resumen"></p>
+
+    <script>
+        function calcularProyeccion() {
+            const publicidadMensual = parseFloat(document.getElementById('publicidad').value);
+            const gastoOperativoColombia = parseFloat(document.getElementById('gastoColombia').value);
+            const gastoOperativoEcuador = parseFloat(document.getElementById('gastoEcuador').value);
+
+            const costoInicialUsuario = 8;
+            const costoFinalUsuario = 2;
+            const conversionRegistradosSolicitantes = 0.3;
+            const conversionSolicitantesRetenidos = 0.17;
+            const porcentajePrime = 0.3;
+            const porcentajeRegulares = 0.7;
+
+            let meses = 120;
+            let costoPorUsuario = costoInicialUsuario;
+            let clientesRetenidosActivos = 0;
+            let capitalExternoTotal = 0;
+            let puntoEquilibrioMes = null;
+            let totalClientesRegistrados = 0;
+
+            const resultados = [];
+            const tbody = document.querySelector("#tablaProyeccion tbody");
+            tbody.innerHTML = "";
+
+            for (let mes = 1; mes <= meses; mes++) {
+                // Reducir costo por usuario cada 2 meses hasta alcanzar el costo final
+                if (mes % 2 === 0 && costoPorUsuario > costoFinalUsuario) {
+                    costoPorUsuario -= 1;
+                }
+
+                // Calcular clientes registrados con la inversión mensual
+                const clientesRegistrados = Math.floor(publicidadMensual / costoPorUsuario);
+                totalClientesRegistrados += clientesRegistrados;
+
+                // Calcular clientes solicitando y retenidos nuevos
+                const clientesSolicitando = Math.floor(clientesRegistrados * conversionRegistradosSolicitantes);
+                const nuevosRetenidos = Math.floor(clientesSolicitando * conversionSolicitantesRetenidos);
+
+                // Actualizar clientes retenidos activos
+                clientesRetenidosActivos += nuevosRetenidos;
+
+                // Distribuir clientes retenidos entre Prime y Regulares
+                const clientesPrime = Math.floor(clientesRetenidosActivos * porcentajePrime);
+                const clientesRegulares = Math.floor(clientesRetenidosActivos * porcentajeRegulares);
+
+                // Calcular ganancias mensuales
+                const gananciaPrimerServicio = nuevosRetenidos * 1;
+                const gananciaPrime = clientesPrime * 10;
+                const gananciaRegulares = clientesRegulares * 20;
+                const gananciaTotal = gananciaPrimerServicio + gananciaPrime + gananciaRegulares;
+
+                // Calcular gastos operativos totales
+                const gastoOperativoTotal = publicidadMensual + gastoOperativoColombia + gastoOperativoEcuador;
+
+                // Determinar balance y necesidad de capital externo
+                const balance = gananciaTotal - gastoOperativoTotal;
+                let capitalExterno = 0;
+
+                if (balance < 0) {
+                    capitalExterno = Math.abs(balance);
+                    capitalExternoTotal += capitalExterno;
+                } else {
+                    capitalExterno = 0;
+                    if (!puntoEquilibrioMes) {
+                        puntoEquilibrioMes = mes;
+                    }
+                }
+
+                // Guardar resultados
+                resultados.push({
+                    mes,
+                    clientesRegistrados,
+                    totalClientesRegistrados,
+                    costoPorUsuario,
+                    clientesSolicitando,
+                    nuevosRetenidos,
+                    clientesRetenidosActivos,
+                    clientesPrime,
+                    gananciaPrime,
+                    clientesRegulares,
+                    gananciaRegulares,
+                    gananciaPrimerServicio,
+                    gananciaTotal,
+                    gastoOperativoTotal,
+                    capitalExterno
+                });
+
+                // Renderizar fila en la tabla
+                const row = `
+                    <tr>
+                        <td>${mes}</td>
+                        <td>${clientesRegistrados}</td>
+                        <td>${totalClientesRegistrados}</td>
+                        <td>${costoPorUsuario.toFixed(2)}</td>
+                        <td>${clientesSolicitando}</td>
+                        <td>${nuevosRetenidos}</td>
+                        <td>${clientesRetenidosActivos}</td>
+                        <td>${clientesPrime}</td>
+                        <td>${gananciaPrime.toFixed(2)}</td>
+                        <td>${clientesRegulares}</td>
+                        <td>${gananciaRegulares.toFixed(2)}</td>
+                        <td>${gananciaPrimerServicio.toFixed(2)}</td>
+                        <td>${gananciaTotal.toFixed(2)}</td>
+                        <td>${gastoOperativoTotal.toFixed(2)}</td>
+                        <td>${capitalExterno.toFixed(2)}</td>
+                    </tr>`;
+                tbody.innerHTML += row;
+            }
+
+            // Mostrar resumen final
+            const resumen = `
+                Total de Capital Externo Necesario: ${capitalExternoTotal.toFixed(2)} USD<br>
+                Mes de Punto de Equilibrio: ${puntoEquilibrioMes || "No alcanzado"}
+            `;
+            document.getElementById("resumen").innerHTML = resumen;
+        }
+    </script>
+</body>
+</html>
